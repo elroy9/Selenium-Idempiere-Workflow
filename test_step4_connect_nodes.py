@@ -4,20 +4,44 @@ from pages.login_page import LoginPage
 from pages.workflow_page import WorkflowPage
 from pages.transition_page import TransitionPage
 import time
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 CSV_PATH = "data/testing_workflow_ppbp.csv"
 
 def go_to_workflow_node_tab(driver, workflow, transition):
-    """Helper: kembali ke Workflow PPBP Node tab"""
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+
     workflow.search_menu("Workflow")
     time.sleep(3)
     workflow.click_search_button()
     time.sleep(2)
     workflow.fill_search_key("%Workflow PPBP%")
-    time.sleep(3)
-    node_tab = driver.find_element("xpath",
-        "//span[contains(@class,'z-tab-text') and normalize-space(text())='Node']")
-    node_tab.click()
+    time.sleep(4)
+
+    # Klik record pakai JavaScript
+    try:
+        first_record = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located(
+                (By.XPATH, "//div[contains(@class,'z-grid-body')]//tr[contains(@class,'z-row')][1]//td[2]")
+            )
+        )
+        driver.execute_script("arguments[0].click();", first_record)
+        time.sleep(3)
+        print("✅ Record dipilih")
+    except Exception:
+        print("⚠️ Grid tidak muncul, lanjut langsung ke Node tab")
+
+    # Klik tab Node pakai JavaScript
+    node_tab = WebDriverWait(driver, 15).until(
+        EC.presence_of_element_located(
+            (By.XPATH, "//span[contains(@class,'z-tab-text') and normalize-space(text())='Node']")
+        )
+    )
+    driver.execute_script("arguments[0].click();", node_tab)
     time.sleep(2)
     print("✅ Kembali ke Workflow PPBP Node tab")
 
@@ -56,7 +80,7 @@ def test_connect_nodes():
             print(f"🔄 Baris {i+1}: {cost_center}")
             print(f"   Full Name : {full_name}")
             print(f"   Value     : {csv_value}")
-            print(f"{'='*50}")
+            print(f"{'='*50}")  
 
             # === PGA Chain ===
             transition.process_pga_chain(full_name, csv_value)
