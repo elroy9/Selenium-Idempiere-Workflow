@@ -20,17 +20,26 @@ def parse_cost_center(cost_center):
 def load_csv(filepath, limit=5):
     rows = []
     with open(filepath, encoding='utf-8-sig') as f:
-        sample = f.read(1024)
+        sample = f.read(2048)
         f.seek(0)
-        delimiter = '\t' if '\t' in sample else ';'
+
+        # Deteksi delimiter: tab, semicolon, atau koma
+        if '\t' in sample:
+            delimiter = '\t'
+        elif ';' in sample:
+            delimiter = ';'
+        else:
+            delimiter = ','
+
+        print(f"   CSV delimiter: '{delimiter}'")
 
         reader = csv.reader(f, delimiter=delimiter)
         headers = []
         for i, row in enumerate(reader):
             if i == 0:
-                continue
+                continue  # Skip baris group header
             if i == 1:
-                headers = [h.strip() for h in row]  # Strip spasi dari semua header
+                headers = [h.strip() for h in row]
                 print(f"   Headers: {headers[:5]}...")
                 continue
             if len(rows) >= limit:
