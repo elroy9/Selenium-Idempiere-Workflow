@@ -50,13 +50,25 @@ class LoginPage:
     def select_client_and_role(self, client_name, role_name):
         time.sleep(2)
 
-        # Client sudah default 920 (tidak bisa dipilih/diubah), jadi diabaikan.
-        # Langsung isi Role saja.
-        all_combos = self.wait.until(EC.presence_of_all_elements_located(
-            (By.XPATH, "//input[contains(@class,'z-combobox-input')]")
-        ))
-        enabled = [c for c in all_combos if c.is_enabled() and c.is_displayed()]
-        role_field = enabled[0]
+        # Cari combobox Role berdasarkan label "Role" di sebelahnya — lebih aman
+        # daripada menebak index, karena Client tetap muncul di posisi pertama
+        # walau sudah terkunci di 920.
+        try:
+            role_field = self.wait.until(EC.presence_of_element_located(
+                (By.XPATH,
+                "//td[contains(@class,'idempiere-label') and normalize-space(text())='Role']"
+                "/following-sibling::td//input[contains(@class,'z-combobox-input')]"
+                " | //label[normalize-space(text())='Role']"
+                "/following::input[contains(@class,'z-combobox-input')][1]")
+            ))
+        except Exception:
+            # Fallback: ambil combobox enabled index 1 (setelah Client)
+            all_combos = self.wait.until(EC.presence_of_all_elements_located(
+                (By.XPATH, "//input[contains(@class,'z-combobox-input')]")
+            ))
+            enabled = [c for c in all_combos if c.is_enabled() and c.is_displayed()]
+            role_field = enabled[1] if len(enabled) > 1 else enabled[0]
+
         role_field.clear()
         role_field.send_keys(role_name)
         time.sleep(1)
