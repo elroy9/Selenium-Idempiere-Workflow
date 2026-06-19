@@ -1,6 +1,8 @@
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import time
 
 BASE_URL = "http://10.1.3.152:9292/webui/index.zul"
 
@@ -30,7 +32,6 @@ class LoginPage:
         print("✅ Password diisi")
 
     def check_select_role(self):
-        # Checkbox index 0 = Select Role, index 1 = Remember Me
         checkboxes = self.wait.until(EC.presence_of_all_elements_located(
             (By.XPATH, "//input[@type='checkbox']")
         ))
@@ -47,10 +48,23 @@ class LoginPage:
         print("✅ Tombol OK diklik")
 
     def select_client_and_role(self, client_name, role_name):
-        import time
-        time.sleep(2)  # Tunggu dialog role muncul sepenuhnya
+        time.sleep(2)
 
-        # Client & Role sudah ter-select otomatis, langsung klik OK
+        # Client sudah default 920 (tidak bisa dipilih/diubah), jadi diabaikan.
+        # Langsung isi Role saja.
+        all_combos = self.wait.until(EC.presence_of_all_elements_located(
+            (By.XPATH, "//input[contains(@class,'z-combobox-input')]")
+        ))
+        enabled = [c for c in all_combos if c.is_enabled() and c.is_displayed()]
+        role_field = enabled[0]
+        role_field.clear()
+        role_field.send_keys(role_name)
+        time.sleep(1)
+        role_field.send_keys(Keys.ENTER)
+        time.sleep(1)
+        print(f"✅ Role dipilih: {role_name}")
+
+        # Klik OK
         ok_btn = self.wait.until(EC.element_to_be_clickable(
             (By.XPATH, "//button[contains(@class,'login-btn') and contains(.,'OK')]")
         ))

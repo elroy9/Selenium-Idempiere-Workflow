@@ -18,14 +18,16 @@ import os
 # ─────────────────────────────────────────────
 def get_user_input():
     print("=" * 50)
-    print("  SELENIUM IDEMPIERE - WORKFLOW GASOLINE")
+    print("  SELENIUM IDEMPIERE - WORKFLOW AUTOMATION")
     print("=" * 50)
 
     username = input("\n👤 Username iDempiere: ").strip()
     password = getpass.getpass("🔑 Password iDempiere: ")
+    client   = input("🏢 Client (contoh: 920): ").strip()
+    role     = input("👔 Role (contoh: FICO Team Admin): ").strip()
 
     while True:
-        csv_path = input("\n📂 Path file CSV (contoh: data/workflow_gasoline.csv): ").strip()
+        csv_path = input("\n📂 Path file CSV: ").strip()
         if os.path.exists(csv_path):
             break
         print(f"   ❌ File tidak ditemukan: {csv_path}. Coba lagi.")
@@ -40,13 +42,15 @@ def get_user_input():
             print("   ❌ Masukkan angka yang valid.")
 
     print(f"\n✅ Input diterima:")
-    print(f"   Username     : {username}")
-    print(f"   Password     : {'*' * len(password)}")
-    print(f"   File CSV     : {csv_path}")
-    print(f"   Jumlah baris : {limit}")
+    print(f"   Username : {username}")
+    print(f"   Password : {'*' * len(password)}")
+    print(f"   Client   : {client}")
+    print(f"   Role     : {role}")
+    print(f"   File CSV : {csv_path}")
+    print(f"   Jumlah baris: {limit}")
     print("=" * 50)
 
-    return username, password, csv_path, limit
+    return username, password, client, role, csv_path, limit
 
 
 # ─────────────────────────────────────────────
@@ -155,7 +159,7 @@ def process_gasoline_chain(transition_page, full_name, csv_value):
 #  MAIN
 # ─────────────────────────────────────────────
 def main():
-    username, password, csv_path, limit = get_user_input()
+    username, password, client, role, csv_path, limit = get_user_input()
 
     driver      = get_driver()
     login       = LoginPage(driver)
