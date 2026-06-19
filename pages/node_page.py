@@ -3,6 +3,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import StaleElementReferenceException
 from utils.csv_helper import parse_cost_center
 import time
 
@@ -24,24 +25,49 @@ class NodePage:
         new_btn = self.wait.until(EC.element_to_be_clickable(
             (By.XPATH, "//img[contains(@src,'New24.png')]/..")
         ))
-        new_btn.click()
+        self.driver.execute_script("arguments[0].scrollIntoView({block:'center'});", new_btn)
+        time.sleep(0.5)
+        self.driver.execute_script("arguments[0].click();", new_btn)
         time.sleep(2)
+
+        # Verifikasi form benar-benar siap (Search Key field ada & enabled)
+        # sebelum melanjutkan — mencegah race condition DOM re-render ganda
+        for _ in range(5):
+            fields = self.driver.find_elements(
+                By.XPATH, "//input[@instancename='AD_WF_Node0Value']"
+            )
+            ready = [f for f in fields if f.is_displayed() and f.is_enabled()]
+            if ready:
+                break
+            time.sleep(1)
+
         print("✅ Tombol New diklik")
 
+    def _get_visible_field(self, xpath, max_attempts=5):
+        """Cari field yang benar-benar visible+enabled, retry kalau stale/belum ada."""
+        for _ in range(max_attempts):
+            try:
+                fields = self.driver.find_elements(By.XPATH, xpath)
+                visible = [f for f in fields if f.is_displayed() and f.is_enabled()]
+                if visible:
+                    return visible[-1]
+            except StaleElementReferenceException:
+                pass
+            time.sleep(0.5)
+        raise Exception(f"Field tidak ditemukan/visible: {xpath}")
+
     def fill_search_key(self, value):
-        field = self.wait.until(EC.presence_of_element_located(
-            (By.XPATH, "//input[@instancename='AD_WF_Node0Value']")
-        ))
-        field.clear()
+        field = self._get_visible_field("//input[@instancename='AD_WF_Node0Value']")
+        self.driver.execute_script("arguments[0].scrollIntoView({block:'center'});", field)
+        self.driver.execute_script("arguments[0].value = '';", field)
         field.send_keys(value)
         time.sleep(1)
         print(f"   Search Key: {value}")
 
     def fill_name(self, value):
-        field = self.wait.until(EC.presence_of_element_located(
-            (By.XPATH, "//input[@instancename='AD_WF_Node0Name']")
-        ))
-        field.clear()
+        field = self._get_visible_field("//input[@instancename='AD_WF_Node0Name']")
+        self.driver.execute_script("arguments[0].scrollIntoView({block:'center'});", field)
+        self.driver.execute_script("arguments[0].value = '';", field)
         field.send_keys(value)
         time.sleep(1)
         self.driver.execute_script("document.activeElement.blur();")
@@ -53,6 +79,7 @@ class NodePage:
             (By.XPATH, f"//span[contains(@class,'idempiere-label') and text()='{label_text}']/ancestor::tr//input[contains(@class,'z-combobox-input')]")
         ))
 
+        self.driver.execute_script("arguments[0].scrollIntoView({block:'center'});", field)
         self.driver.execute_script("arguments[0].click();", field)
         time.sleep(1)
         self.driver.execute_script("arguments[0].value = '';", field)
@@ -67,7 +94,7 @@ class NodePage:
     def fill_workflow_responsible(self, value):
         time.sleep(1)
         self.fill_combobox_by_label("Workflow Responsible", value)
-        
+
     def fill_action(self, value="User Choice"):
         self.fill_combobox_by_label("Action", value)
         time.sleep(3)
@@ -79,7 +106,8 @@ class NodePage:
         save_btn = self.wait.until(EC.element_to_be_clickable(
             (By.XPATH, "//img[contains(@src,'Save24.png')]/..")
         ))
-        save_btn.click()
+        self.driver.execute_script("arguments[0].scrollIntoView({block:'center'});", save_btn)
+        self.driver.execute_script("arguments[0].click();", save_btn)
         time.sleep(2)
         print("   ✅ Node disimpan")
 
